@@ -1,3 +1,6 @@
+// Win32TreeViewExample.cpp
+// Copyright (C) 2018 Katayama Hirofumi MZ <katayama.hirofumi.mz@gmail.com>
+// This file is public domain software (PDS).
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
@@ -31,12 +34,13 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 
     TCHAR szText[] = TEXT("Root");
     insert.item.pszText = szText;
-    TreeView_InsertItem(hwndTV, &insert);
+    if (HTREEITEM hNewItem = TreeView_InsertItem(hwndTV, &insert))
+    {
+        printf("#%d was inserted\n", nValue);
+        fflush(stdout);
 
-    printf("#%d was inserted\n", nValue);
-    fflush(stdout);
-
-    ++nValue;
+        ++nValue;
+    }
     wsprintf(szText, TEXT("Item #%d"), nValue);
     SetDlgItemText(hwnd, edt1, szText);
     SetDlgItemInt(hwnd, edt2, nValue, TRUE);
@@ -60,9 +64,7 @@ void OnPsh1(HWND hwnd)
     insert.item.mask = TVIF_TEXT | TVIF_PARAM;
     insert.item.lParam = nValue;
     insert.item.pszText = szText;
-    HTREEITEM hNewItem = TreeView_InsertItem(hwndTV, &insert);
-
-    if (hNewItem)
+    if (HTREEITEM hNewItem = TreeView_InsertItem(hwndTV, &insert))
     {
         printf("#%d was inserted\n", nValue);
         fflush(stdout);
@@ -72,7 +74,7 @@ void OnPsh1(HWND hwnd)
         SetDlgItemText(hwnd, edt1, szText);
         SetDlgItemInt(hwnd, edt2, nValue, TRUE);
 
-        if (1)
+        if (TRUE)
         {
             TreeView_Expand(hwndTV, hItem, TVE_EXPAND);
             TreeView_EnsureVisible(hwndTV, hNewItem);
@@ -120,6 +122,7 @@ LRESULT OnNotify(HWND hwnd, int idFrom, LPNMHDR pnmhdr)
     LPARAM lParam;
     NM_TREEVIEW *pTreeView;
     TV_DISPINFO *pDispInfo;
+    TV_KEYDOWN *pKeyDown;
 
     switch (pnmhdr->code)
     {
@@ -127,7 +130,6 @@ LRESULT OnNotify(HWND hwnd, int idFrom, LPNMHDR pnmhdr)
         if (idFrom == ctl1)
         {
             lParam = TV_GetParam(hwndTV);
-            SetDlgItemInt(hwnd, stc1, (UINT)lParam, TRUE);
             printf("#%d was selected\n", lParam);
             fflush(stdout);
         }
@@ -170,6 +172,16 @@ LRESULT OnNotify(HWND hwnd, int idFrom, LPNMHDR pnmhdr)
             }
         }
         break;
+    case TVN_KEYDOWN:
+        if (idFrom == ctl1)
+        {
+            pKeyDown = (TV_KEYDOWN *)pnmhdr;
+            if (pKeyDown->wVKey == VK_DELETE)
+            {
+                OnPsh2(hwnd);
+            }
+        }
+        break;
     }
     return 0;
 }
@@ -188,6 +200,7 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main(void)
 {
+    InitCommonControls();
     DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(1), NULL, DialogProc);
     return 0;
 }
